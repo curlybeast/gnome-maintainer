@@ -68,8 +68,14 @@ vc_parameters = ''
 upload_server = 'master.gnome.org'
 
 # Bugzilla specifics
-gb_username = ''
-gb_password = ''
+bugzillas = {u'GB':{u'description':'GNOME',
+		    u'url':'bugzilla.gnome.org',
+		    u'username':'',
+		    u'password':''},
+	     u'FDO':{u'description':'FreeDesktop',
+		     u'url':'bugs.freedesktop.org',
+		     u'username':'',
+		     u'password':''}}
 
 # Formatting 
 format_bullet = '*'
@@ -484,8 +490,15 @@ def get_summary(bugs_gb, bugs_nb):
 		return ''
 
 	summary = ''
-	summary += bugzilla_generate_request('GB', '', 'bugzilla.gnome.org', gb_username, gb_password, bugs_gb, True)
-	# summary += bugzilla_generate_request('NB', '', 'bugzilla.somewhere.org', 'username', 'password', bugs_nb, True)
+
+	for domain in bugzillas:
+		summary += bugzilla_generate_request(domain,
+						     '',
+						     bugzillas[domain]['url'],
+						     bugzillas[domain]['username'],
+						     bugzillas[domain]['password'],
+						     bugs_gb,
+						     True)
 
 	return summary;
 
@@ -1036,17 +1049,21 @@ def output_summary(repo, name):
         	print 'No %s bugs found fixed\n' % (name)
                 return
 
-	print '%s summary:' % (name)
+	# Could be more efficient
+	for domain in bugzillas:
+		if not domain == repo:
+			continue
 
-	# Notations accepted in change log
-	if repo == 'GB':
-		summary = bugzilla_generate_request('GB', 'GNOME', 'bugzilla.gnome.org', gb_username, gb_password, bugs, False)
-	# Add your repo here:
-	# elif repo == 'NB':
-		# Nokia Bugzilla, no longer working: projects.maemo.org/bugzilla
-		# summary = bugzilla_generate_request('NB', 'Nokia', 'projects.maemo.org/bugzilla', 'username', 'password', bugs, False)
+		print '%s summary:' % (name)
+		summary = bugzilla_generate_request(domain,
+						    bugzillas[domain]['description'],
+						    bugzillas[domain]['url'],
+						    bugzillas[domain]['username'],
+						    bugzillas[domain]['password'],
+						    bugs,
+						    False)
+		print '%s' % (summary)
 
-	print '%s' % (summary)
 
 def output_bugs(repo, name):
         bugs = get_bugs(opts.revision, repo)
@@ -1065,15 +1082,20 @@ def output_bugs_and_titles(repo, name):
         	print 'No %s bugs found fixed\n' % (name)
                 return
 
-	if repo == 'GB':
-		summary = bugzilla_generate_request('GB', 'GNOME', 'bugzilla.gnome.org', gb_username, gb_password, bugs, True)
-	# Add your repo here:
-	# elif repo == 'NB':
-		# Nokia Bugzilla, no longer working: projects.maemo.org/bugzilla
-		# summary = bugzilla_generate_request('NB', 'Nokia', 'projects.maemo.org/bugzilla', 'username', 'password', bugs, True)
+	for domain in bugzillas:
+		if not domain == repo:
+			continue
 
-	print '%s bugs:' % (name)
-	print '%s' % (summary)
+		print '%s bugs:' % (name)
+		summary = bugzilla_generate_request(domain,
+						    bugzillas[domain]['description'],
+						    bugzillas[domain]['url'],
+						    bugzillas[domain]['username'],
+						    bugzillas[domain]['password'],
+						    bugs,
+						    True)
+		print '%s' % (summary)
+
 
 #
 # Start
@@ -1168,7 +1190,7 @@ if not opts.get_bugs and not opts.get_bugs_and_titles and not opts.get_summary a
    not opts.update_news and not opts.tag:
         print 'No option specified'
         print usage
-        sys.exit()       
+        sys.exit()
 
 if opts.get_bugs or opts.get_bugs_and_titles or opts.get_summary or \
    opts.get_translators or opts.get_manual_translators or \
@@ -1203,16 +1225,16 @@ if opts.tag and not opts.confirm:
 	sys.exit()
 
 if opts.get_bugs:
-	output_bugs ('GB', 'GNOME')
-	output_bugs ('NB', 'Nokia')
+	for domain in bugzillas:
+		output_bugs (domain, bugzillas[domain]['description'])
 
 if opts.get_bugs_and_titles:
-	output_bugs_and_titles ('GB', 'GNOME')
-	output_bugs_and_titles ('NB', 'Nokia')
+	for domain in bugzillas:
+		output_bugs_and_titles (domain, bugzillas[domain]['description'])
 
 if opts.get_summary:
-	output_summary ('GB', 'GNOME')
-	output_summary ('NB', 'Nokia')
+	for domain in bugzillas:
+		output_summary (domain, bugzillas[domain]['description'])
 
 if opts.get_translators:
         translators = get_translators(opts.revision, po_dir)
