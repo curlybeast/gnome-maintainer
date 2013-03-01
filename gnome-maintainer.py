@@ -360,7 +360,7 @@ def get_svn_url():
 
 	return info[start:end]
 
-def get_bugs(tag, repo_to_match):
+def get_bugs(repo_to_match, tag):
 	get_package_info()
 
 	who_exp = ''
@@ -393,7 +393,17 @@ def get_bugs(tag, repo_to_match):
 
 		# Set changelog format for getting name
 		who_exp = '^Author: (?P<name>.*) <*@*>*'
-		bug_exp = '.*(?P<repo>(bug |GB#|NB#))(?P<bug>[0-9]+)(.*\((?P<name>.*)\))?'
+
+
+		# Should end up with something like this:
+		# '.*(?P<repo>(bug |GB#|NB#))(?P<bug>[0-9]+)(.*\((?P<name>.*)\))?'
+		bug_exp = ''
+		bug_exp += '.*(?P<repo>(bug '
+
+		for domain in bugzillas:
+			bug_exp += '|' + domain + '#'
+
+		bug_exp += '))(?P<bug>[0-9]+)(.*\((?P<name>.*)\))?'
 	else:
 		print 'Version control system unrecognised, not CVS/SVN/GIT'
 		sys.exit(1)
@@ -465,6 +475,7 @@ def get_bugs(tag, repo_to_match):
 			name = name.strip()
 			method = 'patch'
 
+		# Hack to assume all 'bug ' prefixes are GNOME bugs.
 		repo_lower = repo.lower()
 		if repo_lower == 'bug ':
 			repo = 'GB#'
@@ -485,19 +496,22 @@ def get_bugs(tag, repo_to_match):
 
 	return bugs
 
-def get_summary(bugs_gb, bugs_nb):
-	if len(bugs_gb) < 1 and len(bugs_nb) < 1:
+def get_summary(repo, bugs):
+	if len(bugs) < 1:
 		return ''
 
 	summary = ''
 
 	for domain in bugzillas:
+		if not domain == repo:
+			continue
+
 		summary += bugzilla_generate_request(domain,
 						     '',
 						     bugzillas[domain]['url'],
 						     bugzillas[domain]['username'],
 						     bugzillas[domain]['password'],
-						     bugs_gb,
+						     bugs,
 						     True)
 
 	return summary;
@@ -886,9 +900,6 @@ def create_release_note(tag, template_file):
 	name = package_name
 	version = package_version
 
-	bugs_gb = get_bugs(tag, 'GB')
-	bugs_nb = get_bugs(tag, 'NB')
-
 	download = 'http://download.gnome.org/sources/%s/%s/' % (package_name.lower(),
 								 package_version)
 
@@ -908,7 +919,12 @@ def create_release_note(tag, template_file):
 
 	#news = get_news()
 
-	fixed = get_summary(bugs_gb, bugs_nb)
+	fixed = ''
+
+	for domain in bugzillas:
+		bugs = get_bugs(domain, tag)
+		fixed += get_summary(domain, bugs)
+
 	translations = get_translators(tag, po_dir)
 	if translations == "None":
 		translations = "  None";
@@ -985,19 +1001,28 @@ def upload_tarball():
 def update_news():
 	get_package_info()
 
-	bugs_gb = get_bugs(opts.revision, 'GB')
-	bugs_nb = get_bugs(opts.revision, 'NB')
-	if len(bugs_gb) < 1 and len(bugs_nb) < 1:
+	found_bugs = False
+	summary = ''
+
+	for domain in bugzillas:
+		bugs = get_bugs(domain, opts.revision)
+
+		if not bugs == '':
+			found_bugs = True
+			summary += get_summary(domain, bugs)
+
+	if not found_bugs:
 		print 'No bugs were found to update the NEWS file with'
 		sys.exit()
 
-	summary = get_summary(bugs_gb, bugs_nb)
 	if len(summary) < 1:
 		print 'No summary was available to update the NEWS file with'
 		sys.exit()
 
 	po_translators = get_translators(opts.revision, po_dir)
 	help_translators = get_translators(opts.revision, help_dir)
+
+	# FIXME: doesn't play nice with non-ascii strings...
 	output = template_update_news % (package_version, summary, po_translators, help_translators)
 
 	f = open('NEWS', 'r')
@@ -1038,7 +1063,7 @@ def tag_svn():
 # Output helper functions
 #
 def output_summary(repo, name):
-	bugs = get_bugs(opts.revision, repo)
+	bugs = get_bugs(repo, opts.revision)
 
 	if len(bugs) < 1:
 		print 'No %s bugs found fixed\n' % (name)
@@ -1061,7 +1086,7 @@ def output_summary(repo, name):
 
 
 def output_bugs(repo, name):
-	bugs = get_bugs(opts.revision, repo)
+	bugs = get_bugs(repo, opts.revision)
 
 	if len(bugs) < 1:
 		print 'No %s bugs found fixed\n' % (name)
@@ -1071,7 +1096,7 @@ def output_bugs(repo, name):
 	print '  %s\n' % (bugs.replace(repo + '#', ''))
 
 def output_bugs_and_titles(repo, name):
-	bugs = get_bugs(opts.revision, repo)
+	bugs = get_bugs(repo, opts.revision)
 
 	if len(bugs) < 1:
 		print 'No %s bugs found fixed\n' % (name)
