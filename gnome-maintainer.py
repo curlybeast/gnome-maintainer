@@ -70,8 +70,6 @@ upload_server = 'master.gnome.org'
 # Bugzilla specifics
 gb_username = ''
 gb_password = ''
-nb_username = 'martyn'
-nb_password = 'VfkR4i9O'
 
 # Formatting 
 format_bullet = '*'
@@ -487,7 +485,7 @@ def get_summary(bugs_gb, bugs_nb):
 
 	summary = ''
 	summary += bugzilla_generate_request('GB', '', 'bugzilla.gnome.org', gb_username, gb_password, bugs_gb, True)
-	summary += bugzilla_generate_request('NB', '', 'projects.maemo.org/bugzilla', nb_username, nb_password, bugs_nb, True)
+	# summary += bugzilla_generate_request('NB', '', 'bugzilla.somewhere.org', 'username', 'password', bugs_nb, True)
 
 	return summary;
 
@@ -1040,10 +1038,13 @@ def output_summary(repo, name):
 
 	print '%s summary:' % (name)
 
+	# Notations accepted in change log
 	if repo == 'GB':
 		summary = bugzilla_generate_request('GB', 'GNOME', 'bugzilla.gnome.org', gb_username, gb_password, bugs, False)
-	elif repo == 'NB':
-		summary = bugzilla_generate_request('NB', 'Nokia', 'projects.maemo.org/bugzilla', nb_username, nb_password, bugs, False)
+	# Add your repo here:
+	# elif repo == 'NB':
+		# Nokia Bugzilla, no longer working: projects.maemo.org/bugzilla
+		# summary = bugzilla_generate_request('NB', 'Nokia', 'projects.maemo.org/bugzilla', 'username', 'password', bugs, False)
 
 	print '%s' % (summary)
 
@@ -1066,8 +1067,10 @@ def output_bugs_and_titles(repo, name):
 
 	if repo == 'GB':
 		summary = bugzilla_generate_request('GB', 'GNOME', 'bugzilla.gnome.org', gb_username, gb_password, bugs, True)
-	elif repo == 'NB':
-		summary = bugzilla_generate_request('NB', 'Nokia', 'projects.maemo.org/bugzilla', nb_username, nb_password, bugs, True)
+	# Add your repo here:
+	# elif repo == 'NB':
+		# Nokia Bugzilla, no longer working: projects.maemo.org/bugzilla
+		# summary = bugzilla_generate_request('NB', 'Nokia', 'projects.maemo.org/bugzilla', 'username', 'password', bugs, True)
 
 	print '%s bugs:' % (name)
 	print '%s' % (summary)
