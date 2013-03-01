@@ -274,11 +274,11 @@ def get_package_info():
 		vc_command = 'git'
 		vc_parameters = ''
 	else:
-		print 'Version control system unrecognised, not cvs or svn'
+		print 'Version control system unrecognised, not cvs, svn or git'
 		sys.exit(1)
 
         if not os.path.exists('config.h'):
-                print 'Could not find config.h in current directory'
+                print 'Could not find config.h in current directory, we need this to identify the package details'
                 sys.exit(1)
         
         f = open('config.h', 'r')
